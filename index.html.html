@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: rgb(248, 240, 122);
+            font-family: Arial, sans-serif;
+        }
+
+        #tree-container {
+            height: 100vh;
+            width: 200%;
+            overflow: auto;
+        }
+
+        .link {
+            fill: none;
+            stroke: rgba(102, 102, 102, 0.438);
+            stroke-width: 2px;
+        }
+
+        .node {
+            cursor: pointer;
+        }
+
+        .node circle {
+            fill: rgba(221, 221, 221, 0);
+            stroke: rgba(153, 153, 153, 0);
+            stroke-width: 16px;
+        }
+
+        .node text {
+            font-size: 1.2em;
+            font-weight: bold;
+            text-anchor: middle;
+        }
+
+        .node--leaf text {
+            fill: #00796b;
+        }
+
+        .node--root text {
+            fill: #f57c00;
+        }
+
+        .node--intermediate text {
+            fill: #4db6ac;
+        }
+    </style>
+</head>
+<body>
+    <div id="tree-container"></div>
+    
+      
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script>
+        var treeData = {
+    name: "TEJIDO ADIPOSO",
+    children: [
+        {
+            name:"Realiza una funcion importante en la homeostasis energetica",
+
+        },
+        {
+            name: "Tipos",
+            children: [
+                { 
+                    name: "Tejido Adiposo Blanco (unilocular)",
+                    children: [
+                        { 
+                          name: "Adipocitos blancos",
+                          children:[
+                              {name:"Una gota lipidica"},
+                              {name:"Nucleo Aplanado"},
+                              {name:"Celulas grandes"},
+                              {name:"Pocas mitocondrias"}
+                          ] 
+                        },
+                        { 
+                            name: "Funciones",
+                            children:[
+                                {name:"Aislamiento termico"},
+                                {name:"Almacenamiento de energia"},
+                                {name:"Metabolismo de lipidos,carbohidratos y proteinas"},
+                                { 
+                                  name:"Secrecion de hormonas",
+                                  children:[
+                                    {name:"Adipocitos"}
+                                  ]
+                                },
+                            ]
+                        },
+                        {name:"Predominan en adultos"},
+                    ]
+                },
+                { 
+                    name: "Tejido Adiposo Pardo (multilocular)",
+                    children: [
+                        { 
+                            name: "Adipocitos pardos",
+                            children:[
+                                {name:"Celulas de menor amplitud"},
+                                {name:"Varias gotas lipidicas"},
+                                {name:"Un citoplasma con nucleo redondo"},
+                                {name:"Muchas mitocondrias"},
+                                {name:"Proteina termogenica (UCP-1)"}
+                            ]
+                        },
+                        { 
+                           name: "Funciones",
+                           children:[
+                                {name:"Homeostasis metabolica"},
+                                {name:"Termogenisis Adaptativa"}
+                           ]
+                         },
+                        {name:"Abundante en neonatos"},
+                    ]
+                },
+            ]
+        },
+        { 
+            name: "Transdiferenciacion",
+            children: [
+                { 
+                    name: "Pardo a Blanco",
+                },
+                { 
+                    name: "Blanco a Pardo",
+                },
+                { 
+                    name: "INDUCEN A",
+                    children: [
+                          {name:"Frio"},
+                          {name:"Actividad fisica"}
+                    ]
+                },
+            ]
+        },
+        { 
+            name: "Factores de Transcripcion",
+            children: [
+                { 
+                    name: "A partir de celulas mesenquimatosas",
+                    children: [
+                        {
+                           name: "PPARy/RXR",
+                           children:[
+                            {name:"Adipocitos blancos"}
+                           ]
+                        },
+                        { 
+                            name: "PRDM16/PGC-1",
+                            children:[
+                                {name:"Adipocitos Pardos"}
+                            ]
+                        },
+                    ]
+                },
+            ]
+        }
+    ]
+};
+
+        
+        var svg = d3.select("#tree-container").append("svg")
+            .attr("width", window.innerWidth* 2)
+            .attr("height", window.innerHeight * 3), // Ajusta este valor según tus necesidades
+            margin = {top: 20, right: 100, bottom: 30, left: 100},
+            width = svg.attr("width") - margin.left - margin.right,
+            height = svg.attr("height") - margin.top - margin.bottom;
+
+        var g = svg.append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        var tree = d3.tree()
+            .size([height, width ]);
+
+        var root = d3.hierarchy(treeData, function(d) { return d.children; });
+        root.x0 = height / 2;
+        root.y0 = 0;
+
+        var i = 0;
+        update(root);
+
+        function update(source) {
+            var treeData = tree(root);
+
+            var nodes = treeData.descendants(),
+                links = treeData.descendants().slice(1);
+
+            nodes.forEach(function(d){ d.y = d.depth * 400}); // antes era 180
+
+
+            var node = g.selectAll('g.node')
+                .data(nodes, function(d) { return d.id || (d.id = ++i); });
+
+                var nodeEnter = node.enter().append('g')
+                .attr('class', 'node')
+                .attr('transform', function(d) {
+                    return 'translate(' + source.y0 + ',' + source.x0 + ')';
+                })
+                .on('click', click);
+
+            nodeEnter.append('circle')
+                .attr('class', function(d) { return d.children ? (d.parent ? "node--intermediate" : "node--root") : "node--leaf"; })
+                .attr('r', 1e-6);
+
+            nodeEnter.append('text')
+                .attr('dy', '.35em')
+                .attr('x', function(d) { return d.children ? -13 : 13; })
+                .style('fill-opacity', 1e-6)
+                .text(function(d) { return d.data.name; });
+
+            var nodeUpdate = nodeEnter.merge(node);
+
+            nodeUpdate.transition()
+                .duration(500)
+                .attr('transform', function(d) { 
+                    return 'translate(' + d.y + ',' + d.x + ')';
+                });
+
+            nodeUpdate.select('circle')
+                .attr('r', 10)
+                .style('fill-opacity', 1);
+
+            nodeUpdate.select('text')
+                .style('fill-opacity', 1);
+
+            var nodeExit = node.exit().transition()
+                .duration(500)
+                .attr('transform', function(d) {
+                    return 'translate(' + source.y + ',' + source.x + ')';
+                })
+                .remove();
+
+            nodeExit.select('circle')
+                .attr('r', 1e-6);
+
+            nodeExit.select('text')
+                .style('fill-opacity', 1e-6);
+
+            var link = g.selectAll('path.link')
+                .data(links, function(d) { return d.id; });
+
+            var linkEnter = link.enter().insert('path', "g")
+                .attr("class", "link")
+                .attr('d', function(d){
+                    var o = {x: source.x0, y: source.y0}
+                    return diagonal(o, o)
+                });
+
+            var linkUpdate = linkEnter.merge(link);
+
+            linkUpdate.transition()
+                .duration(500)
+                .attr('d', function(d){ return diagonal(d, d.parent) });
+
+            var linkExit = link.exit().transition()
+                .duration(500)
+                .attr('d', function(d) {
+                    var o = {x: source.x, y: source.y}
+                    return diagonal(o, o)
+                })
+                .remove();
+
+            nodes.forEach(function(d){
+                d.x0 = d.x;
+                d.y0 = d.y;
+            });
+
+            function diagonal(s, d) {
+
+                path = `M ${s.y} ${s.x}
+                        C ${(s.y + d.y) / 2} ${s.x},
+                          ${(s.y + d.y) / 2} ${d.x},
+                          ${d.y} ${d.x}`
+
+                return path
+            }
+
+            function click(d) {
+                if (d.children) {
+                    d._children = d.children;
+                    d.children = null;
+                } else {
+                    d.children = d._children;
+                    d._children = null;
+                }
+                update(d);
+            }
+        }
+
+    </script>
+</body>
+</html>
